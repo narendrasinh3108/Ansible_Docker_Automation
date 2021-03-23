@@ -4,7 +4,7 @@
         prompt: "Enter Mount Directory folder name: "
         private: no
       - name: name
-        prompt: "Enter yor name"
+        prompt: "Enter your name: "
         private: no
   tasks:
         - name: Create Docker Repo
