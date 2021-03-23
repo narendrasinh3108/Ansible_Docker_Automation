@@ -1,0 +1,87 @@
+- hosts: docker
+  vars_prompt:
+      - name: directory
+        prompt: "Enter Mount Directory folder name: "
+        private: no
+      - name: name
+        prompt: "Enter yor name"
+        private: no
+  tasks:
+        - name: Create Docker Repo
+          yum_repository:
+            baseurl: https://download.docker.com/linux/centos/7/x86_64/stable/
+            name: DockerRepo
+            description: "This Repo is For Docker"
+            gpgcheck: no   
+        - debug:
+            msg: "Yum Repository Created"   
+        - name: Search Docker Software is availbale or not in current sysytem
+          command: rpm -q docker-ce
+          register: x
+          ignore_errors: yes
+        - debug:
+            msg: "Search Docker "
+
+        - name: Download Docker if currently not availble in System
+          command: yum  install docker-ce --nobest -y
+          command: echo "docker installed"
+          when: x.rc != 0 
+        
+        - debug:
+             msg: "Docker is already available"
+          when: x.rc != 1
+         
+        - name: Start Docker Service
+          service:
+               name: docker
+               state: started
+        - name: Search docker.py 
+          command: pip3 show docker-py
+          register: y
+          ignore_errors: yes
+
+
+        - debug:
+            var: y.rc
+
+        - name: install docker.py
+          pip:
+             name: docker.py
+          when: y.rc != 0
+
+        - name: pull image
+          docker_image:
+            name: httpd
+            source: pull
+        
+        - name: Create folder for mount volume for container
+          file:
+             dest: "/{{ directory }}"
+             state: directory
+
+        - name: Copy html page to mount folder
+          template:
+             src: index.html
+             dest: /{{ directory }}/
+        - name: Create container
+          community.general.docker_container:
+                name: myweb5
+                image: httpd
+                state: started
+                exposed_ports:
+                - 80
+                ports:
+                - 8081:80
+                volumes:
+                - /{{directory}}:/usr/local/apache2/htdocs
+        - name: Firewalld
+          firewalld:
+            port: 8080/tcp
+            permanent: yes
+            state: disabled
+
+
+
+         
+
+   
